@@ -24,9 +24,7 @@ const geistSans = Geist({
                 }>) {
                   return (
                       <html lang="en">
-                            <body
-                                    className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-                                          >
+                            <body>
                                                   {children}
                                                         </body>
                                                             </html>
