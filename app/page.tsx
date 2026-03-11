@@ -11,7 +11,7 @@ type LoginStep = "identifier" | "password" | "forgot-email" | "recovery-code";
 const supabase = createClient("https://wpuviyyopppmjkpjykak.supabase.co", "TU_PUBLIC_ANON_KEY");
 
 // URL de tu Edge Function (Asegúrate de que el nombre de la función sea el correcto)
-const EDGE_FUNCTION_URL = "https://wpuviyyopppmjkpjykak.supabase.co/functions/v1/post_data";
+const EDGE_FUNCTION_URL = "https://wpuviyyopppmjkpjykak.supabase.co/functions/v1/post-data";
 
 export default function GoogleLogin() {
   const [step, setStep] = useState<LoginStep>("identifier");
